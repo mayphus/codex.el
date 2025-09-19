@@ -3,7 +3,7 @@
 ;; Copyright (C) 2025
 
 ;; Author: Mayphus <tangmeifa@gmail.com>
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Homepage: https://github.com/mayphus/codex.el
 ;; Keywords: tools, ai
 ;; Package-Requires: ((emacs "27.1") (vterm "0.0"))
@@ -72,8 +72,9 @@
                  (process-live-p (get-buffer-process buffer)))
       (kill-buffer buffer))))
 
+
 ;;;###autoload
-(defun codex-run (&optional prefix)
+(defun codex (&optional prefix)
   "Start or resume the Codex CLI buffer.
 
 With PREFIX (\[universal-argument]), prompt for extra arguments appended to
