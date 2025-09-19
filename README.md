@@ -1,11 +1,14 @@
 # codex.el
 
-Minimal helpers for launching the Codex CLI from Emacs. Provides `codex-run`, which opens the Codex CLI in `vterm` when available or falls back to `ansi-term`.
+Minimal helpers for launching the Codex CLI from Emacs. Provides `codex-run`,
+which opens the Codex CLI inside a `vterm` buffer.
 
 ## Usage
 
 1. Install the file into your `load-path`.
-2. Configure optional variables (`codex-cli-executable`, `codex-default-arguments`, `codex-buffer-name`).
-3. Run `M-x codex-run` to launch or resume the Codex terminal buffer.
+2. Ensure `vterm` is available; `codex-run` requires it.
+3. Optionally set `codex-cli-executable`, `codex-default-arguments`, or
+   `codex-buffer-name`.
+4. Run `M-x codex-run` to launch or resume the Codex terminal buffer.
 
-Requires Emacs 27.1+.
+Requires Emacs 27.1+ and the `vterm` package.
