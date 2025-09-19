@@ -3,8 +3,10 @@
 ;; Copyright (C) 2025
 
 ;; Author: Mayphus <tangmeifa@gmail.com>
+;; Version: 0.1.0
+;; Homepage: https://github.com/mayphus/codex.el
 ;; Keywords: tools, ai
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "27.1") (vterm "0.0"))
 
 ;;; Commentary:
 ;;
@@ -78,7 +80,7 @@ With PREFIX (\[universal-argument]), prompt for extra arguments appended to
 `codex-default-arguments'."
   (interactive "P")
   (unless (require 'vterm nil t)
-    (user-error "codex.el requires vterm"))
+    (user-error "Codex.el requires vterm"))
   (let* ((extra (when prefix (codex--read-extra-args)))
          (command (codex--command-list (or extra nil)))
          (live-buffer (codex--live-buffer)))

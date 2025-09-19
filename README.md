@@ -14,6 +14,12 @@ its `:vc` support:
   :commands (codex-run))
 ```
 
+If you are using `straight.el`, you can pull the package with:
+
+```elisp
+(straight-use-package '(codex :host github :repo "mayphus/codex.el"))
+```
+
 Alternatively, clone the repository and add it to your `load-path` manually.
 
 ## Usage
