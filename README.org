@@ -1,28 +1,30 @@
-# codex.el
+#+title: codex.el
+
+* codex.el
 
 Minimal helpers for launching the Codex CLI from Emacs. Provides `codex`,
 which opens the Codex CLI inside a `vterm` buffer.
 
-## Installation
+** Installation
 
 For Emacs 29+ where `use-package` ships built in, you can install directly via
 its `:vc` support:
 
-```elisp
+#+begin_src elisp
 (use-package codex
   :vc (:url "https://github.com/mayphus/codex.el.git")
   :commands (codex))
-```
+#+end_src
 
 If you are using `straight.el`, you can pull the package with:
 
-```elisp
+#+begin_src elisp
 (straight-use-package '(codex :host github :repo "mayphus/codex.el"))
-```
+#+end_src
 
 Alternatively, clone the repository and add it to your `load-path` manually.
 
-## Usage
+** Usage
 
 1. Install the file into your `load-path`.
 2. Ensure `vterm` is available; `codex` requires it.
