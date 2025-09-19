@@ -61,9 +61,9 @@
 (defun codex--live-buffer ()
   "Return live Codex buffer or nil."
   (when-let* ((buffer (get-buffer codex-buffer-name))
-              (process (get-buffer-process buffer))
-              ((process-live-p process)))
-    buffer))
+              (process (get-buffer-process buffer)))
+    (when (process-live-p process)
+      buffer)))
 
 (defun codex--cleanup-buffer ()
   "Remove stale Codex buffer if its process is dead."
