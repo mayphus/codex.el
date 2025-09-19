@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2025
 
-;; Author: Codex Agent
+;; Author: Mayphus <tangmeifa@gmail.com>
 ;; Keywords: tools, ai
 ;; Package-Requires: ((emacs "27.1"))
 
