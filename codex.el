@@ -31,7 +31,7 @@
   :type '(repeat string)
   :group 'codex)
 
-(defcustom codex-buffer-name "*Codex*"
+(defcustom codex-buffer-name "*codex*"
   "Name of the buffer used for Codex sessions."
   :type 'string
   :group 'codex)
