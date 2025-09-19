@@ -16,6 +16,19 @@
          (expected (mapconcat #'shell-quote-argument args " ")))
     (should (equal (codex--command-string args) expected))))
 
+(ert-deftest codex-default-buffer-name-includes-directory ()
+  (should (equal (codex--default-buffer-name "*codex*" "/tmp/my-app/")
+                 "*codex*<my-app>"))
+  (should (equal (codex--default-buffer-name "*codex*" "/") "*codex*")))
+
+(ert-deftest codex-buffer-name-function-is-used ()
+  (let* ((default-directory "/tmp/foo/")
+         (codex-buffer-name "*base*")
+         (codex-buffer-name-function
+          (lambda (base dir)
+            (format "%s:%s" base dir))))
+    (should (equal (codex--buffer-name) "*base*:/tmp/foo/"))))
+
 (provide 'codex-test)
 
 ;;; codex-test.el ends here
