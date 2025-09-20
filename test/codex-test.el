@@ -18,8 +18,11 @@
 
 (ert-deftest codex-default-buffer-name-includes-directory ()
   (should (equal (codex--default-buffer-name "*codex*" "/tmp/my-app/")
-                 "*codex*<tmp:my-app>"))
-  (should (equal (codex--default-buffer-name "*codex*" "/") "*codex*")))
+                 (format "codex: %s"
+                         (codex--abbreviate-directory "/tmp/my-app/"))))
+  (should (equal (codex--default-buffer-name "*codex*" "/")
+                 (format "codex: %s"
+                         (codex--abbreviate-directory "/")))))
 
 (ert-deftest codex-buffer-name-function-is-used ()
   (let* ((default-directory "/tmp/foo/")

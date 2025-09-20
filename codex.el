@@ -43,71 +43,33 @@ This expands DIRECTORY so relative paths resolve predictably."
   (when directory
     (directory-file-name (expand-file-name directory))))
 
-(defun codex--last-path-segment (directory)
-  "Return the last segment of DIRECTORY or nil."
+(defun codex--abbreviate-directory (directory)
+  "Return DIRECTORY abbreviated with a trailing slash."
   (when directory
-    (let ((resolved (codex--normalize-directory directory)))
-      (unless (string-empty-p resolved)
-        (file-name-nondirectory resolved)))))
-
-(defun codex--sanitize-suffix (value)
-  "Return VALUE with directory separators replaced by colons.
-
-VALUE is trimmed of leading/trailing slashes.  Return nil for empty strings."
-  (when value
-    (let* ((trimmed (string-trim value "/" "/")))
-      (unless (string-empty-p trimmed)
-        (replace-regexp-in-string "/+" ":" trimmed)))))
-
-(defun codex--project-root (directory)
-  "Return project root for DIRECTORY or nil."
-  (when (and directory (fboundp 'project-current) (fboundp 'project-root))
-    (when-let ((project (project-current nil directory)))
-      (ignore-errors
-        (codex--normalize-directory (project-root project))))))
-
-(defun codex--buffer-suffix-from-project (directory)
-  "Return default buffer suffix using project metadata.
-
-DIRECTORY must be normalized.  Return nil if no project context exists."
-  (when-let* ((root (codex--project-root directory))
-              (project-name (codex--last-path-segment root)))
-    (let* ((relative (file-relative-name directory root))
-           (relative-suffix (codex--sanitize-suffix relative)))
-      (cond
-       ((or (not relative-suffix) (string= relative-suffix ".")) project-name)
-       (t (format "%s:%s" project-name relative-suffix))))))
-
-(defun codex--path-segments (directory)
-  "Return list of path segments for DIRECTORY.
-
-DIRECTORY must be normalized."
-  (when directory
-    (split-string (directory-file-name directory) "/+" t)))
-
-(defun codex--buffer-suffix-from-path (directory)
-  "Return buffer suffix derived from DIRECTORY segments.
-
-DIRECTORY must be normalized."
-  (when-let* ((segments (codex--path-segments directory))
-              (suffix-segments (if (>= (length segments) 2)
-                                   (last segments 2)
-                                 segments)))
-    (mapconcat #'identity suffix-segments ":")))
+    (file-name-as-directory (abbreviate-file-name directory))))
 
 (defun codex--buffer-suffix (directory)
   "Return suffix appended to the base buffer name for DIRECTORY."
-  (or (codex--buffer-suffix-from-project directory)
-      (codex--buffer-suffix-from-path directory)))
+  (codex--abbreviate-directory directory))
+
+(defun codex--display-prefix (base-name)
+  "Return BASE-NAME with surrounding asterisks removed."
+  (if (and (> (length base-name) 1)
+           (string-prefix-p "*" base-name)
+           (string-suffix-p "*" base-name))
+      (substring base-name 1 (1- (length base-name)))
+    base-name))
 
 (defun codex--default-buffer-name (base-name directory)
-  "Return BASE-NAME augmented with a suffix derived from DIRECTORY.
+  "Return buffer name based on BASE-NAME and DIRECTORY.
 
-If DIRECTORY does not resolve to a meaningful segment, fall back to BASE-NAME."
+If DIRECTORY does not resolve to a meaningful label, fall back to BASE-NAME."
   (let* ((normalized (codex--normalize-directory directory))
          (suffix (and normalized (codex--buffer-suffix normalized))))
     (if suffix
-        (format "%s<%s>" base-name suffix)
+        (let* ((prefix (codex--display-prefix base-name))
+               (name (if (string-empty-p prefix) base-name prefix)))
+          (format "%s: %s" name suffix))
       base-name)))
 
 (defcustom codex-buffer-name-function #'codex--default-buffer-name
