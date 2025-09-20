@@ -18,7 +18,7 @@
 
 (ert-deftest codex-default-buffer-name-includes-directory ()
   (should (equal (codex--default-buffer-name "*codex*" "/tmp/my-app/")
-                 "*codex*<my-app>"))
+                 "*codex*<tmp:my-app>"))
   (should (equal (codex--default-buffer-name "*codex*" "/") "*codex*")))
 
 (ert-deftest codex-buffer-name-function-is-used ()

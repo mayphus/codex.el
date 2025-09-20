@@ -36,15 +36,78 @@
   :type 'string
   :group 'codex)
 
+(defun codex--normalize-directory (directory)
+  "Return DIRECTORY without trailing slash, or nil.
+
+This expands DIRECTORY so relative paths resolve predictably."
+  (when directory
+    (directory-file-name (expand-file-name directory))))
+
+(defun codex--last-path-segment (directory)
+  "Return the last segment of DIRECTORY or nil."
+  (when directory
+    (let ((resolved (codex--normalize-directory directory)))
+      (unless (string-empty-p resolved)
+        (file-name-nondirectory resolved)))))
+
+(defun codex--sanitize-suffix (value)
+  "Return VALUE with directory separators replaced by colons.
+
+VALUE is trimmed of leading/trailing slashes.  Return nil for empty strings."
+  (when value
+    (let* ((trimmed (string-trim value "/" "/")))
+      (unless (string-empty-p trimmed)
+        (replace-regexp-in-string "/+" ":" trimmed)))))
+
+(defun codex--project-root (directory)
+  "Return project root for DIRECTORY or nil."
+  (when (and directory (fboundp 'project-current) (fboundp 'project-root))
+    (when-let ((project (project-current nil directory)))
+      (ignore-errors
+        (codex--normalize-directory (project-root project))))))
+
+(defun codex--buffer-suffix-from-project (directory)
+  "Return default buffer suffix using project metadata.
+
+DIRECTORY must be normalized.  Return nil if no project context exists."
+  (when-let* ((root (codex--project-root directory))
+              (project-name (codex--last-path-segment root)))
+    (let* ((relative (file-relative-name directory root))
+           (relative-suffix (codex--sanitize-suffix relative)))
+      (cond
+       ((or (not relative-suffix) (string= relative-suffix ".")) project-name)
+       (t (format "%s:%s" project-name relative-suffix))))))
+
+(defun codex--path-segments (directory)
+  "Return list of path segments for DIRECTORY.
+
+DIRECTORY must be normalized."
+  (when directory
+    (split-string (directory-file-name directory) "/+" t)))
+
+(defun codex--buffer-suffix-from-path (directory)
+  "Return buffer suffix derived from DIRECTORY segments.
+
+DIRECTORY must be normalized."
+  (when-let* ((segments (codex--path-segments directory))
+              (suffix-segments (if (>= (length segments) 2)
+                                   (last segments 2)
+                                 segments)))
+    (mapconcat #'identity suffix-segments ":")))
+
+(defun codex--buffer-suffix (directory)
+  "Return suffix appended to the base buffer name for DIRECTORY."
+  (or (codex--buffer-suffix-from-project directory)
+      (codex--buffer-suffix-from-path directory)))
+
 (defun codex--default-buffer-name (base-name directory)
-  "Return BASE-NAME augmented with the last segment of DIRECTORY.
+  "Return BASE-NAME augmented with a suffix derived from DIRECTORY.
 
 If DIRECTORY does not resolve to a meaningful segment, fall back to BASE-NAME."
-  (let* ((expanded (and directory (expand-file-name directory)))
-         (resolved (and expanded (directory-file-name expanded)))
-         (segment (and resolved (file-name-nondirectory resolved))))
-    (if (and segment (not (string-empty-p segment)))
-        (format "%s<%s>" base-name segment)
+  (let* ((normalized (codex--normalize-directory directory))
+         (suffix (and normalized (codex--buffer-suffix normalized))))
+    (if suffix
+        (format "%s<%s>" base-name suffix)
       base-name)))
 
 (defcustom codex-buffer-name-function #'codex--default-buffer-name
@@ -65,8 +128,17 @@ If DIRECTORY is nil, use `default-directory'."
 
 (defun codex--executable ()
   "Return absolute path to the configured Codex executable."
-  (or (executable-find codex-cli-executable)
-      (user-error "Cannot find Codex executable %s" codex-cli-executable)))
+  (let* ((local-default
+          (if (file-remote-p default-directory)
+              (or (getenv "HOME") (expand-file-name "~"))
+            default-directory))
+         (local-path (let ((default-directory local-default))
+                       (executable-find codex-cli-executable nil)))
+         (remote-path (when (and (not local-path)
+                                 (file-remote-p default-directory))
+                        (executable-find codex-cli-executable t))))
+    (or local-path remote-path
+        (user-error "Cannot find Codex executable %s" codex-cli-executable))))
 
 (defun codex--command-list (extra-args)
   "Return command list with EXTRA-ARGS appended."
