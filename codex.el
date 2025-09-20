@@ -17,20 +17,24 @@
 
 (require 'subr-x)
 
+;;;###autoload
 (defgroup codex nil
   "Minimal helpers for launching the Codex CLI."
   :group 'external)
 
+;;;###autoload
 (defcustom codex-cli-executable "codex"
   "Executable used to launch Codex."
-  :type 'string
+  :type 'file
   :group 'codex)
 
+;;;###autoload
 (defcustom codex-default-arguments nil
   "Default arguments passed to every Codex invocation."
   :type '(repeat string)
   :group 'codex)
 
+;;;###autoload
 (defcustom codex-buffer-name "*codex*"
   "Base name used when constructing Codex buffers."
   :type 'string
@@ -48,10 +52,6 @@ This expands DIRECTORY so relative paths resolve predictably."
   (when directory
     (file-name-as-directory (abbreviate-file-name directory))))
 
-(defun codex--buffer-suffix (directory)
-  "Return suffix appended to the base buffer name for DIRECTORY."
-  (codex--abbreviate-directory directory))
-
 (defun codex--display-prefix (base-name)
   "Return BASE-NAME with surrounding asterisks removed."
   (if (and (> (length base-name) 1)
@@ -65,13 +65,14 @@ This expands DIRECTORY so relative paths resolve predictably."
 
 If DIRECTORY does not resolve to a meaningful label, fall back to BASE-NAME."
   (let* ((normalized (codex--normalize-directory directory))
-         (suffix (and normalized (codex--buffer-suffix normalized))))
+         (suffix (and normalized (codex--abbreviate-directory normalized))))
     (if suffix
         (let* ((prefix (codex--display-prefix base-name))
                (name (if (string-empty-p prefix) base-name prefix)))
           (format "%s: %s" name suffix))
       base-name)))
 
+;;;###autoload
 (defcustom codex-buffer-name-function #'codex--default-buffer-name
   "Function used to compute the Codex buffer name.
 

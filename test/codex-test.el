@@ -32,6 +32,19 @@
             (format "%s:%s" base dir))))
     (should (equal (codex--buffer-name) "*base*:/tmp/foo/"))))
 
+(ert-deftest codex-cleanup-buffer-removes-dead-buffer ()
+  (let* ((codex-buffer-name "*codex-cleanup-test*")
+         (buffer-name (codex--buffer-name))
+         (buffer (get-buffer-create buffer-name)))
+    (unwind-protect
+        (progn
+          (should (buffer-live-p buffer))
+          (codex--cleanup-buffer)
+          (should-not (buffer-live-p buffer)))
+      (let ((live (get-buffer buffer-name)))
+        (when live
+          (kill-buffer live))))))
+
 (provide 'codex-test)
 
 ;;; codex-test.el ends here
