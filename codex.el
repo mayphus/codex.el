@@ -17,6 +17,46 @@
 
 (require 'subr-x)
 
+(defvar codex--buffers nil
+  "List of live Codex buffers ordered most recent first.")
+
+(defvar-local codex--buffer nil
+  "Non-nil when this buffer hosts a Codex session.")
+
+(defun codex--record-buffer (buffer)
+  "Move BUFFER to the front of `codex--buffers'."
+  (setq codex--buffers (cons buffer (delq buffer codex--buffers))))
+
+(defun codex--forget-buffer (buffer)
+  "Remove BUFFER from `codex--buffers'."
+  (setq codex--buffers (delq buffer codex--buffers)))
+
+(defun codex--unregister-current-buffer ()
+  "Remove the current buffer from `codex--buffers'."
+  (codex--forget-buffer (current-buffer)))
+
+(defun codex--register-buffer (buffer)
+  "Ensure BUFFER is tracked as a Codex buffer.
+
+This records BUFFER in `codex--buffers' and installs a hook so the entry is
+removed when the buffer is killed.  Return BUFFER for convenience."
+  (codex--record-buffer buffer)
+  (with-current-buffer buffer
+    (unless (bound-and-true-p codex--buffer)
+      (setq-local codex--buffer t)
+      (add-hook 'kill-buffer-hook #'codex--unregister-current-buffer nil t)))
+  buffer)
+
+(defun codex--available-buffers ()
+  "Return the list of live Codex buffers.
+
+Dead buffers are pruned from `codex--buffers' as a side effect."
+  (let (live)
+    (dolist (buffer codex--buffers)
+      (when (buffer-live-p buffer)
+        (push buffer live)))
+    (setq codex--buffers (nreverse live))))
+
 ;;;###autoload
 (defgroup codex nil
   "Minimal helpers for launching the Codex CLI."
@@ -132,6 +172,7 @@ If DIRECTORY is nil, use `default-directory'."
   (when-let ((buffer (get-buffer (codex--buffer-name directory))))
     (unless (and (get-buffer-process buffer)
                  (process-live-p (get-buffer-process buffer)))
+      (codex--forget-buffer buffer)
       (kill-buffer buffer))))
 
 
@@ -149,10 +190,28 @@ With PREFIX (\[universal-argument]), prompt for extra arguments appended to
          (buffer-name (codex--buffer-name))
          (live-buffer (codex--live-buffer)))
     (if live-buffer
-        (pop-to-buffer live-buffer)
+        (progn
+          (codex--register-buffer live-buffer)
+          (pop-to-buffer live-buffer))
       (codex--cleanup-buffer)
       (let ((vterm-shell (codex--command-string command)))
-        (vterm buffer-name)))))
+        (codex--register-buffer (vterm buffer-name))))))
+
+;;;###autoload
+(defun codex-switch-buffer ()
+  "Prompt for an existing Codex buffer and display it."
+  (interactive)
+  (let* ((buffers (codex--available-buffers)))
+    (unless buffers
+      (user-error "No Codex buffers available"))
+    (let* ((names (mapcar #'buffer-name buffers))
+           (default (buffer-name (car buffers)))
+           (choice (completing-read "Codex buffer: " names nil t nil nil default))
+           (buffer (get-buffer choice)))
+      (unless (and buffer (buffer-live-p buffer))
+        (user-error "Codex buffer %s no longer exists" choice))
+      (codex--register-buffer buffer)
+      (pop-to-buffer buffer))))
 
 (provide 'codex)
 

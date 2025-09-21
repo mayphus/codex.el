@@ -45,6 +45,44 @@
         (when live
           (kill-buffer live))))))
 
+(ert-deftest codex-register-buffer-tracks-buffers ()
+  (let ((codex--buffers nil)
+        (buffer (get-buffer-create "*codex-track*")))
+    (unwind-protect
+        (progn
+          (codex--register-buffer buffer)
+          (should (equal codex--buffers (list buffer)))
+          (kill-buffer buffer)
+          (should-not codex--buffers))
+      (when (buffer-live-p buffer)
+        (kill-buffer buffer)))))
+
+(ert-deftest codex-switch-buffer-prompts-and-switches ()
+  (let ((codex--buffers nil)
+        (buf1 (get-buffer-create "*codex-switch-1*"))
+        (buf2 (get-buffer-create "*codex-switch-2*")))
+    (unwind-protect
+        (progn
+          (codex--register-buffer buf1)
+          (codex--register-buffer buf2)
+          (let (selected)
+            (cl-letf (((symbol-function 'completing-read)
+                       (lambda (&rest _) (buffer-name buf1)))
+                      ((symbol-function 'pop-to-buffer)
+                       (lambda (buffer &rest _)
+                         (setq selected buffer))))
+              (codex-switch-buffer)
+              (should (eq selected buf1))
+              (should (eq (car codex--buffers) buf1)))))
+      (mapc (lambda (buf)
+              (when (buffer-live-p buf)
+                (kill-buffer buf)))
+            (list buf1 buf2)))))
+
+(ert-deftest codex-switch-buffer-fails-without-buffers ()
+  (let ((codex--buffers nil))
+    (should-error (codex-switch-buffer) :type 'user-error)))
+
 (provide 'codex-test)
 
 ;;; codex-test.el ends here
